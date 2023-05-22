@@ -1,0 +1,11 @@
+# macOS specific
+.DS_Store
+
+# Linux specific
+*~
+
+# Program specific
+test*
+*.txt
+*.tsv
+*.csv
