@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"path/filepath"
 	"runtime"
 	"strings"
 	"sync"
@@ -21,35 +22,38 @@ const (
 
 var (
 	GoProApi       = "https://biit.cs.ut.ee/gprofiler/api/convert/convert/"
+	EbiApi         = "https://www.ebi.ac.uk/proteins/api/features"
 	Client         = &http.Client{Timeout: 20 * time.Second}
-	Pdbfile        struct{ Result []struct{ Converted string `json:"converted"` } `json:"result"` }
-	ProtFeatures   struct{ Features []struct{ Begin, End int; Name string } `json:"features"` }
 	filePath	   string
 	columnName     string
 	delimiter      string
 	organism       string
+	ebiOrganism    string
 	outputFilePath string
 	maxReqs		   uint
+	maxReqsEbi	   uint
 	maxWaitTime    uint
 	maxAttempts	int
 )
 
 func init() {
-	flag.StringVar(&filePath, "file", "", "File path")
+	flag.StringVar(&filePath, "file", "", "Input file path (CSV/TSV/ custom delimiter)")
 	flag.StringVar(&columnName, "col", "", "Column name")
 	flag.StringVar(&delimiter, "delim", ",", "Delimiter")
-	flag.StringVar(&organism, "org", "", "Organism")
+	flag.StringVar(&organism, "org", "hsapiens", "Organism")
+	flag.StringVar(&ebiOrganism, "ebio", "human", "EBI Organism")
 	flag.StringVar(&outputFilePath, "out", "", "Output file path")
 	flag.UintVar(&maxReqs,"maxreq", 1000, "Maximum number of requests")
+	flag.UintVar(&maxReqsEbi,"maxebi", 20, "Maximum number of requests to EBI. Limited to 20 by default.")
 	flag.UintVar(&maxWaitTime,"maxwait", 0, "Max seconds to wait for a response in the final attempt")
 	flag.IntVar(&maxAttempts,"maxatt", 5, "Max attempts to make a request")
 	flag.Parse()
 }
 
 func main() {
+	outputFolder := filepath.Dir(outputFilePath)
 	fmt.Printf("Welcome to %s v.%s\n%s\n", software, version, dev)
-
-	if filePath == "" || columnName == "" || organism == "" || outputFilePath == "" {
+	if filePath == "" || columnName == "" || outputFilePath == "" {
 		flag.Usage()
 		os.Exit(1)
 	}
@@ -57,6 +61,7 @@ func main() {
 	// Check if output file already exists, if so, read it to a variable as string
 
 	var wg sync.WaitGroup
+	var wgFea sync.WaitGroup
 	genes := parseCSV(filePath, columnName, delimiter)
 	respch := make(chan string, len(genes))
 	var gene2pdb string
@@ -73,31 +78,44 @@ func main() {
 	fmt.Println("Total available cores:", runtime.NumCPU())
 	fmt.Println("Maximun number of attempts:", maxAttempts)
 	fmt.Println("Maximun number of seconds to wait for a response in the final attempt:", maxWaitTime)
+	fmt.Println("Output folder:", outputFolder)
 	fmt.Println("----------------------------------------")
-	//wg.Add(len(genes))
 	guard := make(chan struct{}, maxReqs)
-	bar := progressbar.Default(int64(len(genes) + 2))
+	guardFeat := make(chan struct{}, maxReqsEbi)
+	bar := progressbar.Default(int64((len(genes) * 2) + 2))
 	for _, gene := range genes {
-		guard <- struct{}{}
+		guardFeat <- struct{}{}
+		saveLoc := fmt.Sprintf("/%s/%s_features.csv", outputFolder, gene)
+		//fmt.Print(saveLoc)
+		wgFea.Add(1)
+		go func(gene string, organism string, api string, saveLoc string, wg *sync.WaitGroup) {
+			defer func() { <-guardFeat }()
+			saveFeats(gene, organism, api, saveLoc, wg)
+		}(gene, ebiOrganism, EbiApi, saveLoc, &wgFea)
+		bar.Add(1)
+
 		wg.Add(1)
+		guard <- struct{}{}
 		go func(gene string, organism string, respch chan string, wg *sync.WaitGroup, maxWait uint, maxatt int) {
 			defer func() { <-guard }()
 			getID(gene, organism, respch, wg, maxWait, maxatt)
 		}(gene, organism, respch, &wg, maxWaitTime, maxAttempts)
 		bar.Add(1)
+
 	}
 	wg.Wait()
 	close(respch)
-
 	for resp := range respch {
 		gene2pdb += resp
 	}
 	bar.Add(1)
 	writeToFile(gene2pdb, outputFilePath)
-	bar.Add(1)
 	failed := len(genes)-len(strings.Split(gene2pdb, "\n"))+1
+	wgFea.Wait()
+	bar.Add(1)
 	if failed > 0 {
 		fmt.Printf("Failed to get PDB ID for %d genes\n", failed)
 	}
 	fmt.Printf("Done!\nCheck the output file:\n%s\n", outputFilePath)
+	//saveFeats("APOE", "human", EbiApi, "./test_features.csv")
 }
