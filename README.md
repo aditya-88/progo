@@ -5,7 +5,7 @@
 
 This program reads a `CSV/TSV` file with gene names and returns a `TSV` file of all known PDB IDs per gene.
 
-Additionaly, it creats individual `TSV` files with all known domains of the gene protein.
+Additionaly, it creates individual `TSV` files with all known domains of the gene protein.
 
 ## Installation ##
 
