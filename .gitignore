@@ -10,3 +10,4 @@ test*
 *.tsv
 *.csv
 bin/
+*.sh
