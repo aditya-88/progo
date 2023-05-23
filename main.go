@@ -33,7 +33,9 @@ var (
 	maxReqs		   uint
 	maxReqsEbi	   uint
 	maxWaitTime    uint
-	maxAttempts	int
+	maxAttempts	   int
+	skipDomain	   bool
+	skipPdb        bool
 )
 
 func init() {
@@ -47,19 +49,22 @@ func init() {
 	flag.UintVar(&maxReqsEbi,"maxebi", 20, "Maximum number of requests to EBI. Limited to 20 by default.")
 	flag.UintVar(&maxWaitTime,"maxwait", 0, "Max seconds to wait for a response in the final attempt")
 	flag.IntVar(&maxAttempts,"maxatt", 5, "Max attempts to make a request")
+	flag.BoolVar(&skipDomain,"skipdom", false, "Skip domain features")
+	flag.BoolVar(&skipPdb,"skippdb", false, "Skip PDB ID")
 	flag.Parse()
 }
 
 func main() {
+	if skipDomain && skipPdb {
+		fmt.Println("Don't take my name in vain.\nYou can't skip both PDB ID and domain features.\nThat's all I do.\nI'm a one trick pony.\nI'm outta here.")
+		os.Exit(0)
+	}	
 	outputFolder := filepath.Dir(outputFilePath)
 	fmt.Printf("Welcome to %s v.%s\n%s\n", software, version, dev)
 	if filePath == "" || columnName == "" || outputFilePath == "" {
 		flag.Usage()
 		os.Exit(1)
 	}
-
-	// Check if output file already exists, if so, read it to a variable as string
-
 	var wg sync.WaitGroup
 	var wgFea sync.WaitGroup
 	genes := parseCSV(filePath, columnName, delimiter)
@@ -74,7 +79,8 @@ func main() {
 	genes = removeEmpty(genes)
 	genes = removeDuplicates(genes)
 	fmt.Println("Total number of genes after dropping empty and duplicates:", len(genes))
-	fmt.Println("Maximun number of concurrent requests:", maxReqs)
+	fmt.Println("Maximun number of concurrent requests for PDB IDs:", maxReqs)
+	fmt.Println("Maximun number of concurrent requests for domain search:", maxReqsEbi)
 	fmt.Println("Total available cores:", runtime.NumCPU())
 	fmt.Println("Maximun number of attempts:", maxAttempts)
 	fmt.Println("Maximun number of seconds to wait for a response in the final attempt:", maxWaitTime)
@@ -88,19 +94,31 @@ func main() {
 		saveLoc := fmt.Sprintf("/%s/%s_features.csv", outputFolder, gene)
 		//fmt.Print(saveLoc)
 		wgFea.Add(1)
-		go func(gene string, organism string, api string, saveLoc string, wg *sync.WaitGroup) {
-			defer func() { <-guardFeat }()
-			saveFeats(gene, organism, api, saveLoc, wg)
-		}(gene, ebiOrganism, EbiApi, saveLoc, &wgFea)
-		bar.Add(1)
+		if !skipDomain {
+			go func(gene string, organism string, api string, saveLoc string, wg *sync.WaitGroup) {
+				defer func() { <-guardFeat }()
+				saveFeats(gene, organism, api, saveLoc, wg)
+			}(gene, organism, GoProApi, saveLoc, &wgFea)
+			bar.Add(1)
+		} else {
+			wgFea.Done()
+			bar.Add(1)
+			<-guardFeat
+		}
 
 		wg.Add(1)
 		guard <- struct{}{}
-		go func(gene string, organism string, respch chan string, wg *sync.WaitGroup, maxWait uint, maxatt int) {
+		if !skipPdb {
+			go func(gene string, organism string, respch chan string, wg *sync.WaitGroup, maxWait uint, maxatt int) {
 			defer func() { <-guard }()
 			getID(gene, organism, respch, wg, maxWait, maxatt)
 		}(gene, organism, respch, &wg, maxWaitTime, maxAttempts)
-		bar.Add(1)
+		bar.Add(1)	
+		} else {
+			wg.Done()
+			bar.Add(1)
+			<-guard
+		}
 
 	}
 	wg.Wait()
@@ -110,12 +128,15 @@ func main() {
 	}
 	bar.Add(1)
 	writeToFile(gene2pdb, outputFilePath)
-	failed := len(genes)-len(strings.Split(gene2pdb, "\n"))+1
+	if !skipPdb {
+		failed := len(genes)-len(strings.Split(gene2pdb, "\n"))+1
+		if failed > 0 {
+		fmt.Printf("Failed to get PDB ID for %d genes\n", failed)
+		}
+	}
 	wgFea.Wait()
 	bar.Add(1)
-	if failed > 0 {
-		fmt.Printf("Failed to get PDB ID for %d genes\n", failed)
-	}
+
 	fmt.Printf("Done!\nCheck the output file:\n%s\n", outputFilePath)
 	//saveFeats("APOE", "human", EbiApi, "./test_features.csv")
 }
