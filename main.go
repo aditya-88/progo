@@ -16,7 +16,7 @@ import (
 
 const (
 	software = "ProGo"
-	version  = "0.1.0-beta"
+	version  = "0.1.2-beta"
 	dev      = "Aditya Singh\nGithub: aditya-88\n"
 )
 
