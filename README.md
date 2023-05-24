@@ -3,17 +3,22 @@
 
 ## Introduction ##
 
-This program reads a `CSV/TSV` file with gene names and returns a `TSV` file of all known PDB IDs per gene.
+This program reads a CSV/TSV file with gene names and returns a TSV file containing all known PDB IDs per gene. Additionally, it creates individual TSV files with all known domains of the gene protein.
 
-Additionaly, it creates individual `TSV` files with all known domains of the gene protein.
+APIs used:
+
+```text
+EBI       : https://www.ebi.ac.uk/proteins/api/features
+gConvert  : https://biit.cs.ut.ee/gprofiler/api/convert/convert/
+```
 
 ## Installation ##
 
-There are compiled binaries available for major OSes and archs in the `releases`.
+Compiled binaries are available for major operating systems and architectures in the **"releases"** section.
 
-In case your system isn't listed or you wish to compile PROGO on your own, make sure your have `GO` installed and available in `PATH`
+If your system is not listed or you prefer to compile PROGO on your own, make sure you have GO installed and available in your PATH. Additionally, you may need build or development tools specific to your operating system in order to compile the program.
 
-Also, you might need `build` or `dev` tools specific to your OS in order to compile the program. 
+To compile PROGO, follow these steps: 
 
 ```bash
 git clone https://github.com/aditya-88/progo && \
@@ -56,3 +61,24 @@ Usage of /Users/aditya/Codes/progo/bin/progo_macos_arm64:
   -out string
     	Output file path
  ```
+## Description of options ##
+
+**`-col`**      : Name of the column where the gene names are listed.
+
+**`-delim`**    : The delimiter used in the file. By default, it uses "," as the delimiter, suitable for CSV files. You can change it to any delimiter used in your file. For example, for a TSV file, use "\t" as the delimiter.
+
+**`-ebio`**     : Organism name as per the EBI nomenclature. For example, for "Homo sapiens," EBI uses "human".
+
+**`-file`**     : Path to the input file.
+
+**`-maxatt`**   : This defines the number of times PROGO should attempt to re-establish a link with the server in case of an error in the response.
+
+**`-maxebi`**   : The EBI API enforces a strict usage limit of 20 requests per second per user. The default value of 20 concurrent EBI requests seems to work well. Modify it if you encounter errors.
+
+**`-maxreq`**   : GO practically offers concurrency in thousands of channels, but to limit resource usage and prevent system overload, it is set to 1000 for PDB search. Keep in mind that the maximum number of GO routines running at a time will be equal to **-maxebi + -maxreq**.
+
+**`-maxwait`**  : The program times out in 10 seconds by default. You can change this value if you expect delays in your request or do not wish to wait that long.
+
+**`-org`**      : The gProfiler API uses different organism codes than EBI, so both need to be specified. The default value is set to "hsapiens" for "Homo sapiens".
+
+**`-out`**      : Output file name to store the PDB IDs. The individual TSV files per gene for the domain search will be saved to the parent folder of this file.
