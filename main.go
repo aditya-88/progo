@@ -16,7 +16,7 @@ import (
 
 const (
 	software = "ProGo"
-	version  = "0.1.2-beta"
+	version  = "0.1.3-beta"
 	dev      = "Aditya Singh\nGithub: aditya-88\n"
 )
 
@@ -24,17 +24,17 @@ var (
 	GoProApi       = "https://biit.cs.ut.ee/gprofiler/api/convert/convert/"
 	EbiApi         = "https://www.ebi.ac.uk/proteins/api/features"
 	Client         = &http.Client{Timeout: 20 * time.Second}
-	filePath	   string
+	filePath       string
 	columnName     string
 	delimiter      string
 	organism       string
 	ebiOrganism    string
 	outputFilePath string
-	maxReqs		   uint
-	maxReqsEbi	   uint
+	maxReqs        uint
+	maxReqsEbi     uint
 	maxWaitTime    uint
-	maxAttempts	   int
-	skipDomain	   bool
+	maxAttempts    int
+	skipDomain     bool
 	skipPdb        bool
 )
 
@@ -45,12 +45,12 @@ func init() {
 	flag.StringVar(&organism, "org", "hsapiens", "Organism")
 	flag.StringVar(&ebiOrganism, "ebio", "human", "EBI Organism")
 	flag.StringVar(&outputFilePath, "out", "", "Output file path")
-	flag.UintVar(&maxReqs,"maxreq", 1000, "Maximum number of requests")
-	flag.UintVar(&maxReqsEbi,"maxebi", 20, "Maximum number of requests to EBI. Limited to 20 by default.")
-	flag.UintVar(&maxWaitTime,"maxwait", 0, "Max seconds to wait for a response in the final attempt")
-	flag.IntVar(&maxAttempts,"maxatt", 5, "Max attempts to make a request")
-	flag.BoolVar(&skipDomain,"skipdom", false, "Skip domain features")
-	flag.BoolVar(&skipPdb,"skippdb", false, "Skip PDB ID")
+	flag.UintVar(&maxReqs, "maxreq", 1000, "Maximum number of requests")
+	flag.UintVar(&maxReqsEbi, "maxebi", 20, "Maximum number of requests to EBI. Limited to 20 by default.")
+	flag.UintVar(&maxWaitTime, "maxwait", 0, "Max seconds to wait for a response in the final attempt")
+	flag.IntVar(&maxAttempts, "maxatt", 5, "Max attempts to make a request")
+	flag.BoolVar(&skipDomain, "skipdom", false, "Skip domain features")
+	flag.BoolVar(&skipPdb, "skippdb", false, "Skip PDB ID")
 	flag.Parse()
 }
 
@@ -58,7 +58,7 @@ func main() {
 	if skipDomain && skipPdb {
 		fmt.Println("Don't take my name in vain.\nYou can't skip both PDB ID and domain features.\nThat's all I do.\nI'm a one trick pony.\nI'm outta here.")
 		os.Exit(0)
-	}	
+	}
 	outputFolder := filepath.Dir(outputFilePath)
 	fmt.Printf("Welcome to %s v.%s\n%s\n", software, version, dev)
 	if filePath == "" || columnName == "" || outputFilePath == "" {
@@ -91,14 +91,14 @@ func main() {
 	bar := progressbar.Default(int64((len(genes) * 2) + 2))
 	for _, gene := range genes {
 		guardFeat <- struct{}{}
-		saveLoc := fmt.Sprintf("/%s/%s_features.csv", outputFolder, gene)
+		saveLoc := fmt.Sprintf("%s/%s_features.csv", outputFolder, gene)
 		//fmt.Print(saveLoc)
 		wgFea.Add(1)
 		if !skipDomain {
 			go func(gene string, organism string, api string, saveLoc string, wg *sync.WaitGroup) {
 				defer func() { <-guardFeat }()
 				saveFeats(gene, organism, api, saveLoc, wg)
-			}(gene, organism, GoProApi, saveLoc, &wgFea)
+			}(gene, ebiOrganism, EbiApi, saveLoc, &wgFea)
 			bar.Add(1)
 		} else {
 			wgFea.Done()
@@ -110,10 +110,10 @@ func main() {
 		guard <- struct{}{}
 		if !skipPdb {
 			go func(gene string, organism string, respch chan string, wg *sync.WaitGroup, maxWait uint, maxatt int) {
-			defer func() { <-guard }()
-			getID(gene, organism, respch, wg, maxWait, maxatt)
-		}(gene, organism, respch, &wg, maxWaitTime, maxAttempts)
-		bar.Add(1)	
+				defer func() { <-guard }()
+				getID(gene, organism, respch, wg, maxWait, maxatt)
+			}(gene, organism, respch, &wg, maxWaitTime, maxAttempts)
+			bar.Add(1)
 		} else {
 			wg.Done()
 			bar.Add(1)
@@ -127,16 +127,13 @@ func main() {
 		gene2pdb += resp
 	}
 	bar.Add(1)
-	writeToFile(gene2pdb, outputFilePath)
 	if !skipPdb {
-		failed := len(genes)-len(strings.Split(gene2pdb, "\n"))+1
+		writeToFile(gene2pdb, outputFilePath)
+		failed := len(genes) - len(strings.Split(gene2pdb, "\n")) + 1
 		if failed > 0 {
-		fmt.Printf("Failed to get PDB ID for %d genes\n", failed)
+			fmt.Printf("Failed to get PDB ID for %d genes\n", failed)
 		}
 	}
 	wgFea.Wait()
 	bar.Add(1)
-
-	fmt.Printf("Done!\nCheck the output file:\n%s\n", outputFilePath)
-	//saveFeats("APOE", "human", EbiApi, "./test_features.csv")
 }

@@ -15,11 +15,11 @@ func getID(gene string, organism string, respch chan string, wg *sync.WaitGroup,
 		Query    string `json:"query"`
 		Target   string `json:"target"`
 	}
-	var pdbFile struct{
-		Result []struct{
+	var pdbFile struct {
+		Result []struct {
 			Converted string `json:"converted"`
-			} `json:"result"`
-		}
+		} `json:"result"`
+	}
 	var request = new(Request)
 	request.Organism = organism
 	request.Query = gene
@@ -67,6 +67,8 @@ func writeToFile(varList string, path string) { // This function writes the PDB 
 		panic(err)
 	}
 	defer file.Close()
+	// Add a header to the file
+	_, _ = file.WriteString("Gene\tPDB_ID\n")
 	_, err = file.WriteString(varList)
 	if err != nil {
 		panic(err)
@@ -137,10 +139,10 @@ func removeEmpty(genes []string) []string { // This function removes empty strin
 }
 
 func saveFeats(gene string, organism string, api string, saveLoc string, wg *sync.WaitGroup) {
-	var protFeatures []struct{
-		Features []struct{
-			Begin string `json:"begin"`
-			End string `json:"end"`
+	var protFeatures []struct {
+		Features []struct {
+			Begin       string `json:"begin"`
+			End         string `json:"end"`
 			Description string `json:"description"`
 		} `json:"features"`
 	}
@@ -161,23 +163,23 @@ func saveFeats(gene string, organism string, api string, saveLoc string, wg *syn
 		}
 	}
 	if len(protFeatures) > 0 {
-	// Write to file
-	file, err := os.Create(saveLoc)
-	if err != nil {
-		panic(err)
-	}
-	defer file.Close()
-	_, err = file.WriteString("Gene\tStart\tEnd\tDomain\n")
-	if err != nil {
-		panic(err)
-	}
-
-	for _, feature := range protFeatures[0].Features {
-		_, err = file.WriteString(fmt.Sprintf("%v\t%v\t%v\t%v\n", gene, feature.Begin, feature.End, feature.Description))
+		// Write to file
+		file, err := os.Create(saveLoc)
 		if err != nil {
 			panic(err)
 		}
-	}
+		defer file.Close()
+		_, err = file.WriteString("Gene\tStart\tEnd\tDomain\n")
+		if err != nil {
+			panic(err)
+		}
+
+		for _, feature := range protFeatures[0].Features {
+			_, err = file.WriteString(fmt.Sprintf("%v\t%v\t%v\t%v\n", gene, feature.Begin, feature.End, feature.Description))
+			if err != nil {
+				panic(err)
+			}
+		}
 	}
 	wg.Done()
 }
