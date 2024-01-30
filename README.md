@@ -16,7 +16,7 @@ gConvert  : https://biit.cs.ut.ee/gprofiler/api/convert/convert/
 
 Compiled binaries are available for major operating systems and architectures in the **"releases"** section.
 
-If your system is not listed or you prefer to compile PROGO on your own, make sure you have GO installed and available in your PATH. Additionally, you may need build or development tools specific to your operating system in order to compile the program.
+If your system is not listed or you prefer to compile `PROGO` on your own, make sure you have GO installed and available in your PATH. Additionally, you may need build or development tools specific to your operating system in order to compile the program.
 
 To compile PROGO, follow these steps: 
 
@@ -35,31 +35,35 @@ go run ./
 ## Usage ##
 
 ```bash
-Welcome to ProGo v.0.1.0-beta
+Welcome to ProGo v.0.1.5-beta
 Aditya Singh
 Github: aditya-88
 
-Usage of /Users/aditya/Codes/progo/bin/progo_macos_arm64:
+Usage of progo:
   -col string
-    	Column name
+        Column name
   -delim string
-    	Delimiter (default ",")
+        Delimiter (default ",")
   -ebio string
-    	EBI Organism (default "human")
+        EBI Organism (default "human")
   -file string
-    	Input file path (CSV/TSV/ custom delimiter)
+        Input file path (CSV/TSV/ custom delimiter)
   -maxatt int
-    	Max attempts to make a request (default 5)
+        Max attempts to make a request (default 5)
   -maxebi uint
-    	Maximum number of requests to EBI. Limited to 20 by default. (default 20)
+        Maximum number of requests to EBI. Limited to 20 by default. (default 20)
   -maxreq uint
-    	Maximum number of requests (default 1000)
+        Maximum number of requests (default 1000)
   -maxwait uint
-    	Max seconds to wait for a response in the final attempt
+        Max seconds to wait for a response in the final attempt
   -org string
-    	Organism (default "hsapiens")
+        Organism (default "hsapiens")
   -out string
-    	Output file path
+        Output folder location
+  -skipdom
+        Skip domain features
+  -skippdb
+        Skip PDB ID
  ```
 ## Description of options ##
 
@@ -81,4 +85,4 @@ Usage of /Users/aditya/Codes/progo/bin/progo_macos_arm64:
 
 **`-org`**      : The gProfiler API uses different organism codes than EBI, so both need to be specified. The default value is set to "hsapiens" for "Homo sapiens".
 
-**`-out`**      : Output file name to store the PDB IDs. The individual TSV files per gene for the domain search will be saved to the parent folder of this file.
+**`-out`**      : Output folder name to store the results.
