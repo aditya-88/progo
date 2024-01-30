@@ -146,7 +146,7 @@ func saveFeats(gene string, organism string, api string, saveLoc string, wg *syn
 			Description string `json:"description"`
 		} `json:"features"`
 	}
-	request := fmt.Sprintf("%v?offset=0&size=100&reviewed=true&gene=%v&organism=%v&types=DOMAIN", api, gene, organism)
+	request := fmt.Sprintf("%v?offset=0&size=100&reviewed=true&exact_gene=%v&organism=%v&types=DOMAIN", api, gene, organism)
 	resp, err := Client.Get(request)
 	if err != nil {
 		panic(err)
