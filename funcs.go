@@ -138,7 +138,7 @@ func removeEmpty(genes []string) []string { // This function removes empty strin
 	return list
 }
 
-func saveFeats(gene string, organism string, api string, saveLoc string, wg *sync.WaitGroup) {
+func saveFeats(gene string, organism string, api string, saveLoc string, extractFeature string, wg *sync.WaitGroup) {
 	var protFeatures []struct {
 		Features []struct {
 			Begin       string `json:"begin"`
@@ -146,7 +146,7 @@ func saveFeats(gene string, organism string, api string, saveLoc string, wg *syn
 			Description string `json:"description"`
 		} `json:"features"`
 	}
-	request := fmt.Sprintf("%v?offset=0&size=100&reviewed=true&exact_gene=%v&organism=%v&types=DOMAIN", api, gene, organism)
+	request := fmt.Sprintf("%v?offset=0&size=100&reviewed=true&exact_gene=%v&organism=%v&types=%v", api, gene, organism, extractFeature)
 	resp, err := Client.Get(request)
 	if err != nil {
 		panic(err)
@@ -169,7 +169,7 @@ func saveFeats(gene string, organism string, api string, saveLoc string, wg *syn
 			panic(err)
 		}
 		defer file.Close()
-		_, err = file.WriteString("Gene\tStart\tEnd\tDomain\n")
+		_, err = file.WriteString(fmt.Sprintf("Gene\tStart\tEnd\t%v\n", extractFeature))
 		if err != nil {
 			panic(err)
 		}

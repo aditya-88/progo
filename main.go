@@ -15,7 +15,7 @@ import (
 
 const (
 	software = "ProGo"
-	version  = "0.1.5-beta"
+	version  = "0.1.6-beta"
 	dev      = "Aditya Singh\nGithub: aditya-88\n"
 )
 
@@ -29,6 +29,7 @@ var (
 	organism     string
 	ebiOrganism  string
 	outputFolder string
+	getFeat      string // Feature to get from EBI
 	maxReqs      uint
 	maxReqsEbi   uint
 	maxWaitTime  uint
@@ -44,6 +45,7 @@ func init() {
 	flag.StringVar(&organism, "org", "hsapiens", "Organism")
 	flag.StringVar(&ebiOrganism, "ebio", "human", "EBI Organism")
 	flag.StringVar(&outputFolder, "out", "", "Output folder location")
+	flag.StringVar(&getFeat, "feat", "DOMAIN", "Feature to get from EBI")
 	flag.UintVar(&maxReqs, "maxreq", 1000, "Maximum number of requests")
 	flag.UintVar(&maxReqsEbi, "maxebi", 20, "Maximum number of requests to EBI. Limited to 20 by default.")
 	flag.UintVar(&maxWaitTime, "maxwait", 0, "Max seconds to wait for a response in the final attempt")
@@ -79,6 +81,7 @@ func main() {
 	fmt.Println("Total number of genes after dropping empty and duplicates:", len(genes))
 	fmt.Println("Maximum number of concurrent requests for PDB IDs:", maxReqs)
 	fmt.Println("Maximum number of concurrent requests for domain search:", maxReqsEbi)
+	fmt.Println("Type of feature to get from EBI:", getFeat)
 	fmt.Println("Total available cores:", runtime.NumCPU())
 	fmt.Println("Maximum number of attempts:", maxAttempts)
 	fmt.Println("Maximum number of seconds to wait for a response in the final attempt:", maxWaitTime)
@@ -93,10 +96,10 @@ func main() {
 		//fmt.Print(saveLoc)
 		wgFea.Add(1)
 		if !skipDomain {
-			go func(gene string, organism string, api string, saveLoc string, wg *sync.WaitGroup) {
+			go func(gene string, organism string, api string, saveLoc string, extractFeature string, wg *sync.WaitGroup) {
 				defer func() { <-guardFeat }()
-				saveFeats(gene, organism, api, saveLoc, wg)
-			}(gene, ebiOrganism, EbiApi, saveLoc, &wgFea)
+				saveFeats(gene, organism, api, saveLoc, extractFeature, wg)
+			}(gene, ebiOrganism, EbiApi, saveLoc, getFeat, &wgFea)
 			bar.Add(1)
 		} else {
 			wgFea.Done()
