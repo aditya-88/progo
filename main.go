@@ -137,5 +137,5 @@ func main() {
 	wgFea.Wait()
 	bar.Add(1)
 	// Combine all the feature files into a single file
-	combineFiles(outputFolder, fmt.Sprintf("%s/%s_features.csv", outputFolder, strings.Split(strings.Split(filePath, "/")[len(strings.Split(filePath, "/"))-1], ".")[0]))
+	combineFiles(outputFolder, fmt.Sprintf("%s/%s_%s.csv", outputFolder, strings.Split(strings.Split(filePath, "/")[len(strings.Split(filePath, "/"))-1], ".")[0], getFeat))
 }
