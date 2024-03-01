@@ -9,7 +9,7 @@ import (
 	"sync"
 )
 
-func getID(gene string, organism string, respch chan string, wg *sync.WaitGroup, maxWait uint, maxAtt int) { // This function returns the PDB ID of the gene
+func getID(gene string, organism string, respch chan string, wg *sync.WaitGroup, maxAtt int) { // This function returns the PDB ID of the gene
 	type Request struct {
 		Organism string `json:"organism"`
 		Query    string `json:"query"`
@@ -169,7 +169,7 @@ func saveFeats(gene string, organism string, api string, saveLoc string, extract
 			panic(err)
 		}
 		defer file.Close()
-		_, err = file.WriteString(fmt.Sprintf("Gene\tStart\tEnd\t%v\n", extractFeature))
+		//_, err = file.WriteString(fmt.Sprintf("Gene\tStart\tEnd\t%v\n", extractFeature))
 		if err != nil {
 			panic(err)
 		}
@@ -182,4 +182,55 @@ func saveFeats(gene string, organism string, api string, saveLoc string, extract
 		}
 	}
 	wg.Done()
+}
+
+// Function to find all the files in a directory ending with _features.csv and combine them into a single file
+func combineFiles(dir string, output string) {
+	// Get all the files in the directory
+	files, err := os.ReadDir(dir)
+	if err != nil {
+		panic(err)
+	}
+	// Create the output file
+	out, err := os.Create(output)
+	if err != nil {
+		panic(err)
+	}
+	defer out.Close()
+	// Write the header
+	_, err = out.WriteString("Gene\tStart\tEnd\tFeature\n")
+	if err != nil {
+		panic(err)
+	}
+	// Loop through the files
+	for _, file := range files {
+		// Check if the file ends with _features.csv
+		if strings.HasSuffix(file.Name(), "_features.csv") {
+			// Open the file
+			f, err := os.Open(dir + "/" + file.Name())
+			if err != nil {
+				panic(err)
+			}
+			defer f.Close()
+			// Create a new reader
+			r := csv.NewReader(f)
+			// Read all the records
+			records, err := r.ReadAll()
+			if err != nil {
+				panic(err)
+			}
+			// Write the records to the output file
+			for _, record := range records {
+				_, err = out.WriteString(strings.Join(record, "\t") + "\n")
+				if err != nil {
+					panic(err)
+				}
+			}
+			// Delete the file
+			err = os.Remove(dir + "/" + file.Name())
+			if err != nil {
+				panic(err)
+			}
+		}
+	}
 }

@@ -15,7 +15,7 @@ import (
 
 const (
 	software = "ProGo"
-	version  = "0.1.6-beta"
+	version  = "0.1.7-beta"
 	dev      = "Aditya Singh\nGithub: aditya-88\n"
 )
 
@@ -32,7 +32,6 @@ var (
 	getFeat      string // Feature to get from EBI
 	maxReqs      uint
 	maxReqsEbi   uint
-	maxWaitTime  uint
 	maxAttempts  int
 	skipDomain   bool
 	skipPdb      bool
@@ -48,7 +47,6 @@ func init() {
 	flag.StringVar(&getFeat, "feat", "DOMAIN", "Feature to get from EBI")
 	flag.UintVar(&maxReqs, "maxreq", 1000, "Maximum number of requests")
 	flag.UintVar(&maxReqsEbi, "maxebi", 20, "Maximum number of requests to EBI. Limited to 20 by default.")
-	flag.UintVar(&maxWaitTime, "maxwait", 0, "Max seconds to wait for a response in the final attempt")
 	flag.IntVar(&maxAttempts, "maxatt", 5, "Max attempts to make a request")
 	flag.BoolVar(&skipDomain, "skipdom", false, "Skip domain features")
 	flag.BoolVar(&skipPdb, "skippdb", false, "Skip PDB ID")
@@ -84,7 +82,6 @@ func main() {
 	fmt.Println("Type of feature to get from EBI:", getFeat)
 	fmt.Println("Total available cores:", runtime.NumCPU())
 	fmt.Println("Maximum number of attempts:", maxAttempts)
-	fmt.Println("Maximum number of seconds to wait for a response in the final attempt:", maxWaitTime)
 	fmt.Println("Output folder:", outputFolder)
 	fmt.Println("----------------------------------------")
 	guard := make(chan struct{}, maxReqs)
@@ -110,10 +107,10 @@ func main() {
 		wg.Add(1)
 		guard <- struct{}{}
 		if !skipPdb {
-			go func(gene string, organism string, respch chan string, wg *sync.WaitGroup, maxWait uint, maxatt int) {
+			go func(gene string, organism string, respch chan string, wg *sync.WaitGroup, maxatt int) {
 				defer func() { <-guard }()
-				getID(gene, organism, respch, wg, maxWait, maxatt)
-			}(gene, organism, respch, &wg, maxWaitTime, maxAttempts)
+				getID(gene, organism, respch, wg, maxatt)
+			}(gene, organism, respch, &wg, maxAttempts)
 			bar.Add(1)
 		} else {
 			wg.Done()
@@ -139,4 +136,6 @@ func main() {
 	}
 	wgFea.Wait()
 	bar.Add(1)
+	// Combine all the feature files into a single file
+	combineFiles(outputFolder, fmt.Sprintf("%s/%s_features.csv", outputFolder, strings.Split(strings.Split(filePath, "/")[len(strings.Split(filePath, "/"))-1], ".")[0]))
 }
