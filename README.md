@@ -1,6 +1,8 @@
 # PROGO #
 **Pro**tein information gathering in **GO**
 
+[![DOI](https://zenodo.org/badge/643845560.svg)](https://zenodo.org/doi/10.5281/zenodo.13736314)
+
 ## Introduction ##
 
 This program reads a CSV/TSV file with gene names and returns a TSV file containing all known PDB IDs per gene. Additionally, it creates individual TSV files with all known domains of the gene protein.
