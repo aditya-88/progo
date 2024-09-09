@@ -37,36 +37,37 @@ go run ./
 ## Usage ##
 
 ```bash
-Welcome to ProGo v.0.1.5-beta
+Welcome to ProGo v.1.0.0
 Aditya Singh
 Github: aditya-88
 
 Usage of progo:
   -col string
-        Column name
+    	Column name
   -delim string
-        Delimiter (default ",")
+    	Delimiter (default ",")
   -ebio string
-        EBI Organism (default "human")
+    	EBI Organism (default "human")
+  -feat string
+    	Feature to get from EBI (default "DOMAIN")
   -file string
-        Input file path (CSV/TSV/ custom delimiter)
+    	Input file path (CSV/TSV/ custom delimiter)
   -maxatt int
-        Max attempts to make a request (default 5)
+    	Max attempts to make a request (default 5)
   -maxebi uint
-        Maximum number of requests to EBI. Limited to 20 by default. (default 20)
+    	Maximum number of requests to EBI. Limited to 20 by default. (default 20)
   -maxreq uint
-        Maximum number of requests (default 1000)
-  -maxwait uint
-        Max seconds to wait for a response in the final attempt
+    	Maximum number of requests (default 1000)
   -org string
-        Organism (default "hsapiens")
+    	Organism (default "hsapiens")
   -out string
-        Output folder location
+    	Output folder location
   -skipdom
-        Skip domain features
+    	Skip domain features
   -skippdb
-        Skip PDB ID
- ```
+    	Skip PDB ID
+```
+
 ## Description of options ##
 
 **`-col`**      : Name of the column where the gene names are listed.
